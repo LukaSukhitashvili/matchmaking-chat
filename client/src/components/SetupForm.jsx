@@ -49,7 +49,8 @@ const SetupForm = ({ onJoin }) => {
             onJoin({
                 name,
                 gender,
-                country: `${selectedCountry.emoji} ${selectedCountry.name}`
+                country: `${selectedCountry.emoji} ${selectedCountry.name}`,
+                countryCode: selectedCountry.code
             });
         }
     };

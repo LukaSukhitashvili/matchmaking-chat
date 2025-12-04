@@ -116,9 +116,10 @@ function App() {
       )}
 
       <DisconnectModal
-        isOpen={isDisconnectModalOpen}
+        isOpen={isDisconnectModalModalOpen}
         message={disconnectMessage}
         onReconnect={handleReconnect}
+        onHome={handleStop}
       />
     </div>
   );

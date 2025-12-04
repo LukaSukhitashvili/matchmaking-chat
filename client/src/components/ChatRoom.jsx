@@ -48,8 +48,16 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
             {/* Header - Fixed Height */}
             <div className="flex-none flex items-center justify-between p-4 bg-gray-800/90 backdrop-blur-md border-b border-gray-700 shadow-lg z-10">
                 <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold shadow-inner">
-                        {partner.name.charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold shadow-inner overflow-hidden relative">
+                        {partner.countryCode && partner.countryCode !== 'OTHER' ? (
+                            <img
+                                src={`https://flagcdn.com/w80/${partner.countryCode.toLowerCase()}.png`}
+                                alt={partner.country}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <span>{partner.name.charAt(0).toUpperCase()}</span>
+                        )}
                     </div>
                     <div>
                         <h2 className="text-lg font-bold leading-tight">{partner.name}</h2>
@@ -80,8 +88,8 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
                     return (
                         <div key={index} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
                             <div className={`max-w-[85%] md:max-w-md px-5 py-3 rounded-2xl shadow-md break-words ${isMe
-                                    ? 'bg-blue-600 text-white rounded-br-none'
-                                    : 'bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700'
+                                ? 'bg-blue-600 text-white rounded-br-none'
+                                : 'bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700'
                                 } ${msg.type === 'emoji' ? 'text-5xl bg-transparent border-none shadow-none p-0' : ''}`}>
                                 {msg.text}
                             </div>

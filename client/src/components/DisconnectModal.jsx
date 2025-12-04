@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DisconnectModal = ({ isOpen, message, onReconnect }) => {
+const DisconnectModal = ({ isOpen, message, onReconnect, onHome }) => {
     if (!isOpen) return null;
 
     return (
@@ -14,12 +14,20 @@ const DisconnectModal = ({ isOpen, message, onReconnect }) => {
                     </div>
                     <h3 className="text-lg font-bold text-white mb-2">Connection Lost</h3>
                     <p className="text-gray-300 mb-6">{message}</p>
-                    <button
-                        onClick={onReconnect}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold text-white shadow-lg transition-transform transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        Find New Match
-                    </button>
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={onReconnect}
+                            className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-bold text-white shadow-lg transition-transform transform hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            Find New Match
+                        </button>
+                        <button
+                            onClick={onHome}
+                            className="w-full py-3 px-4 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold text-white shadow-lg transition-transform transform hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            Return to Home
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
