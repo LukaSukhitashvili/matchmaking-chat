@@ -116,7 +116,7 @@ function App() {
       )}
 
       <DisconnectModal
-        isOpen={isDisconnectModalModalOpen}
+        isOpen={isDisconnectModalOpen}
         message={disconnectMessage}
         onReconnect={handleReconnect}
         onHome={handleStop}
