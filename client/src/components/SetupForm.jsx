@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { countries } from '../constants/countries';
 
 const SetupForm = ({ onJoin }) => {
     const [name, setName] = useState('');
     const [gender, setGender] = useState('Any');
     const [selectedCountry, setSelectedCountry] = useState(countries.find(c => c.code === 'OTHER'));
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Load from localStorage on mount
     useEffect(() => {
@@ -86,24 +99,60 @@ const SetupForm = ({ onJoin }) => {
                         </div>
                     </div>
 
-                    <div>
+                    <div ref={dropdownRef} className="relative">
                         <label className="block text-sm font-semibold text-gray-300 mb-2">Country</label>
-                        <div className="relative">
-                            <select
-                                value={selectedCountry.code}
-                                onChange={(e) => setSelectedCountry(countries.find(c => c.code === e.target.value))}
-                                className="w-full p-3 rounded-xl bg-gray-700/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white appearance-none cursor-pointer"
-                            >
+                        <button
+                            type="button"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className="w-full p-3 rounded-xl bg-gray-700/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-white text-left flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2">
+                                {selectedCountry.code !== 'OTHER' ? (
+                                    <img
+                                        src={`https://flagcdn.com/24x18/${selectedCountry.code.toLowerCase()}.png`}
+                                        srcSet={`https://flagcdn.com/48x36/${selectedCountry.code.toLowerCase()}.png 2x`}
+                                        width="24"
+                                        height="18"
+                                        alt={selectedCountry.name}
+                                        className="rounded-sm object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-xl">🌍</span>
+                                )}
+                                {selectedCountry.name}
+                            </span>
+                            <svg className={`w-4 h-4 fill-current transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                        </button>
+
+                        {isDropdownOpen && (
+                            <div className="absolute z-20 w-full mt-2 bg-gray-800 border border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
                                 {countries.map((country) => (
-                                    <option key={country.code} value={country.code}>
-                                        {country.emoji} {country.name}
-                                    </option>
+                                    <button
+                                        key={country.code}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedCountry(country);
+                                            setIsDropdownOpen(false);
+                                        }}
+                                        className="w-full p-3 text-left hover:bg-gray-700 transition-colors flex items-center gap-3"
+                                    >
+                                        {country.code !== 'OTHER' ? (
+                                            <img
+                                                src={`https://flagcdn.com/24x18/${country.code.toLowerCase()}.png`}
+                                                srcSet={`https://flagcdn.com/48x36/${country.code.toLowerCase()}.png 2x`}
+                                                width="24"
+                                                height="18"
+                                                alt={country.name}
+                                                className="rounded-sm object-cover"
+                                            />
+                                        ) : (
+                                            <span className="text-xl">🌍</span>
+                                        )}
+                                        {country.name}
+                                    </button>
                                 ))}
-                            </select>
-                            <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
-                                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     <button
