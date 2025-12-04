@@ -1,10 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { countries } from '../constants/countries';
 
 const SetupForm = ({ onJoin }) => {
     const [name, setName] = useState('');
     const [gender, setGender] = useState('Any');
     const [selectedCountry, setSelectedCountry] = useState(countries.find(c => c.code === 'OTHER'));
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        const savedData = localStorage.getItem('matchchat_user');
+        if (savedData) {
+            const { name, gender, countryCode } = JSON.parse(savedData);
+            if (name) setName(name);
+            if (gender) setGender(gender);
+            if (countryCode) {
+                const country = countries.find(c => c.code === countryCode);
+                if (country) setSelectedCountry(country);
+            }
+        }
+    }, []);
+
+    // Save to localStorage on change
+    useEffect(() => {
+        const dataToSave = {
+            name,
+            gender,
+            countryCode: selectedCountry.code
+        };
+        localStorage.setItem('matchchat_user', JSON.stringify(dataToSave));
+    }, [name, gender, selectedCountry]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
