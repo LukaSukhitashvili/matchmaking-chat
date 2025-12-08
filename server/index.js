@@ -34,10 +34,26 @@ const REPORT_EMAIL = 'okaybrooiii@gmail.com';
 // Create email transporter (using Gmail SMTP - requires app password)
 // For production, set GMAIL_USER and GMAIL_APP_PASSWORD in environment variables
 const emailTransporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
         user: process.env.GMAIL_USER || '',
         pass: process.env.GMAIL_APP_PASSWORD || ''
+    },
+    // Add timeouts to prevent hanging
+    connectionTimeout: 10000,
+    socketTimeout: 10000
+    // debug: true, // Uncomment for debug output
+    // logger: true // Uncomment for debug output
+});
+
+// Verify connection configuration
+emailTransporter.verify(function (error, success) {
+    if (error) {
+        console.log('Email Transporter Error:', error);
+    } else {
+        console.log("Server is ready to take our messages");
     }
 });
 
