@@ -235,8 +235,10 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
     };
 
     const handleBlock = () => {
-        socket.emit('block_user', { partnerId: partner.id });
-        onSkip(); // Skip to next partner after blocking
+        socket.emit('block_user', { partnerId: partner.id, roomId });
+        // Don't call onSkip - server handles the disconnection, client will get partner_disconnected or we go to waiting
+        // Instead, go back to home/setup since we blocked this person
+        onStop();
     };
 
     // Render read receipt indicator
@@ -325,8 +327,8 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
                     <button
                         onClick={onSkip}
                         className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors border whitespace-nowrap ${isDark
-                                ? 'bg-gray-700 hover:bg-gray-600 border-gray-600'
-                                : 'bg-gray-100 hover:bg-gray-200 border-gray-300'
+                            ? 'bg-gray-700 hover:bg-gray-600 border-gray-600'
+                            : 'bg-gray-100 hover:bg-gray-200 border-gray-300'
                             }`}
                     >
                         Skip
@@ -369,10 +371,10 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
                                 </div>
                             ) : (
                                 <div className={`max-w-[85%] md:max-w-md px-5 py-3 rounded-2xl shadow-md break-words ${isMe
-                                        ? 'bg-blue-600 text-white rounded-br-none'
-                                        : isDark
-                                            ? 'bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700'
-                                            : 'bg-white text-gray-900 rounded-bl-none border border-gray-200 shadow-sm'
+                                    ? 'bg-blue-600 text-white rounded-br-none'
+                                    : isDark
+                                        ? 'bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700'
+                                        : 'bg-white text-gray-900 rounded-bl-none border border-gray-200 shadow-sm'
                                     } ${msg.type === 'emoji' ? 'text-5xl bg-transparent border-none shadow-none p-0' : ''}`}>
                                     <span>{msg.text}</span>
                                     {msg.type !== 'emoji' && renderReadReceipt(msg)}
@@ -455,8 +457,8 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className={`p-3 rounded-xl transition-colors ${isDark
-                                ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                             }`}
                     >
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -469,8 +471,8 @@ const ChatRoom = ({ socket, roomId, partner, onSkip, onStop }) => {
                         value={input}
                         onChange={handleInputChange}
                         className={`flex-1 p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base ${isDark
-                                ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400'
-                                : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                            ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400'
+                            : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
                             }`}
                         placeholder="Type a message..."
                     />

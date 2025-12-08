@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,29 +28,90 @@ const io = new Server(server, {
     maxHttpBufferSize: 10e6 // 10MB for image sharing
 });
 
+// Email configuration for reports
+const REPORT_EMAIL = 'okaybrooiii@gmail.com';
+
+// Create email transporter (using Gmail SMTP - requires app password)
+// For production, set GMAIL_USER and GMAIL_APP_PASSWORD in environment variables
+const emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_USER || '',
+        pass: process.env.GMAIL_APP_PASSWORD || ''
+    }
+});
+
 // Data Structures
+let connectedSockets = new Set(); // Track all connected sockets for accurate count
 let waitingQueue = []; // Array of socketIds
 let activeRooms = {}; // Map roomId -> { user1, user2 }
 let users = {}; // Map socketId -> userData
 let blockedUsers = {}; // Map socketId -> Set of blocked socketIds
 let reports = []; // Array of report logs
 
-// Helper function to get online user count
-const getOnlineCount = () => Object.keys(users).length;
-
-// Broadcast online count to all connected clients
-const broadcastOnlineCount = () => {
-    io.emit('online_count', { count: getOnlineCount() });
+// Helper function to get online user count (excluding a specific user)
+const getOnlineCountExcluding = (excludeSocketId) => {
+    // Count all connected sockets minus 1 (the requesting user)
+    return Math.max(0, connectedSockets.size - 1);
 };
+
+// Send personalized online count to each user (excluding themselves)
+const broadcastOnlineCount = () => {
+    connectedSockets.forEach(socketId => {
+        const socket = io.sockets.sockets.get(socketId);
+        if (socket) {
+            socket.emit('online_count', { count: getOnlineCountExcluding(socketId) });
+        }
+    });
+};
+
+// Send email report
+async function sendReportEmail(report, reporterName, reportedName) {
+    // Only send if email credentials are configured
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+        console.log('Email not configured. Report logged to console:', report);
+        return;
+    }
+
+    const mailOptions = {
+        from: process.env.GMAIL_USER,
+        to: REPORT_EMAIL,
+        subject: `🚨 MatchChat Report: ${report.reason}`,
+        html: `
+            <h2>New User Report</h2>
+            <p><strong>Time:</strong> ${report.timestamp}</p>
+            <p><strong>Reporter:</strong> ${reporterName} (${report.reporterId})</p>
+            <p><strong>Reported User:</strong> ${reportedName} (${report.reportedId})</p>
+            <p><strong>Reason:</strong> ${report.reason}</p>
+            <p><strong>Details:</strong> ${report.details || 'No additional details provided'}</p>
+            <p><strong>Room ID:</strong> ${report.roomId}</p>
+            <hr>
+            <p style="color: gray; font-size: 12px;">This is an automated report from MatchChat.</p>
+        `
+    };
+
+    try {
+        await emailTransporter.sendMail(mailOptions);
+        console.log('Report email sent successfully');
+    } catch (error) {
+        console.error('Failed to send report email:', error.message);
+    }
+}
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
+    // Track this connection
+    connectedSockets.add(socket.id);
+
     // Initialize blocked set for this user
     blockedUsers[socket.id] = new Set();
 
-    // Send current online count to new connection
-    socket.emit('online_count', { count: getOnlineCount() });
+    // Send current online count to new connection (excluding themselves)
+    socket.emit('online_count', { count: getOnlineCountExcluding(socket.id) });
+
+    // Broadcast updated count to everyone
+    broadcastOnlineCount();
 
     // Handle User Join
     socket.on('join', (userData) => {
@@ -65,8 +127,10 @@ io.on('connection', (socket) => {
             countryCode
         };
 
-        // Add to queue
-        waitingQueue.push(socket.id);
+        // Add to queue if not already in it
+        if (!waitingQueue.includes(socket.id)) {
+            waitingQueue.push(socket.id);
+        }
         console.log(`User ${name} joined queue. Queue length: ${waitingQueue.length}`);
 
         // Broadcast updated online count
@@ -165,10 +229,15 @@ io.on('connection', (socket) => {
 
     // === REPORT USER ===
     socket.on('report_user', ({ roomId, partnerId, reason, details }) => {
+        const reporterName = users[socket.id]?.name || 'Unknown';
+        const reportedName = users[partnerId]?.name || 'Unknown';
+
         const report = {
             timestamp: new Date().toISOString(),
             reporterId: socket.id,
+            reporterName,
             reportedId: partnerId,
+            reportedName,
             roomId,
             reason,
             details: details || ''
@@ -176,19 +245,62 @@ io.on('connection', (socket) => {
         reports.push(report);
         console.log('User reported:', report);
 
+        // Send email notification
+        sendReportEmail(report, reporterName, reportedName);
+
         // Acknowledge report
         socket.emit('report_submitted', { success: true, message: 'Report submitted. Thank you for helping keep our community safe.' });
     });
 
     // === BLOCK USER ===
-    socket.on('block_user', ({ partnerId }) => {
+    socket.on('block_user', ({ partnerId, roomId }) => {
         if (!blockedUsers[socket.id]) {
             blockedUsers[socket.id] = new Set();
         }
         blockedUsers[socket.id].add(partnerId);
         console.log(`User ${socket.id} blocked ${partnerId}`);
 
-        socket.emit('user_blocked', { success: true, blockedId: partnerId });
+        // End the current chat if in a room
+        if (roomId) {
+            // Notify the blocked partner they've been disconnected
+            socket.to(roomId).emit('partner_disconnected');
+
+            // Leave the room
+            const room = activeRooms[roomId];
+            if (room) {
+                io.sockets.sockets.get(partnerId)?.leave(roomId);
+                delete activeRooms[roomId];
+            }
+            socket.leave(roomId);
+        }
+
+        // Send blocked user list to client
+        socket.emit('user_blocked', {
+            success: true,
+            blockedId: partnerId,
+            blockedList: Array.from(blockedUsers[socket.id])
+        });
+    });
+
+    // === UNBLOCK USER ===
+    socket.on('unblock_user', ({ oderId }) => {
+        if (blockedUsers[socket.id]) {
+            blockedUsers[socket.id].delete(oderId);
+            console.log(`User ${socket.id} unblocked ${oderId}`);
+        }
+
+        socket.emit('user_unblocked', {
+            success: true,
+            unblockedId: oderId,
+            blockedList: Array.from(blockedUsers[socket.id] || [])
+        });
+    });
+
+    // === GET BLOCKED LIST ===
+    socket.on('get_blocked_list', () => {
+        socket.emit('blocked_list', {
+            blockedList: Array.from(blockedUsers[socket.id] || [])
+        });
     });
 
     // Handle Skip (Disconnect current, find new)
@@ -229,6 +341,10 @@ io.on('connection', (socket) => {
     // Handle Disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
+
+        // Remove from connected sockets
+        connectedSockets.delete(socket.id);
+
         // Remove from queue
         waitingQueue = waitingQueue.filter(id => id !== socket.id);
         delete users[socket.id];
