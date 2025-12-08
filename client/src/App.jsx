@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import SetupForm from './components/SetupForm';
 import ChatRoom from './components/ChatRoom';
 import DisconnectModal from './components/DisconnectModal';
+import VersionChecker from './components/VersionChecker';
 
 // Initialize socket outside component
 const SOCKET_URL = import.meta.env.MODE === 'production' ? '/' : 'http://localhost:3000';
@@ -90,6 +91,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans overflow-hidden">
+      <VersionChecker />
       {view === 'setup' && <SetupForm onJoin={handleJoin} />}
 
       {view === 'waiting' && (
