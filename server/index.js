@@ -4,7 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,31 +31,15 @@ const io = new Server(server, {
 // Email configuration for reports
 const REPORT_EMAIL = 'okaybrooiii@gmail.com';
 
-// Create email transporter (using Gmail SMTP - requires app password)
-// For production, set GMAIL_USER and GMAIL_APP_PASSWORD in environment variables
-const emailTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // upgrade later with STARTTLS
-    auth: {
-        user: process.env.GMAIL_USER || '',
-        pass: process.env.GMAIL_APP_PASSWORD || ''
-    },
-    // Add timeouts to prevent hanging
-    connectionTimeout: 10000,
-    socketTimeout: 10000,
-    debug: true, // Enable debug logs
-    logger: true // Enable logger
-});
+// Initialize Resend client for email (uses HTTP API, works on Render)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify connection configuration
-emailTransporter.verify(function (error, success) {
-    if (error) {
-        console.log('Email Transporter Error:', error);
-    } else {
-        console.log("Server is ready to take our messages");
-    }
-});
+// Log email configuration status
+if (process.env.RESEND_API_KEY) {
+    console.log('Resend API configured - email reports enabled');
+} else {
+    console.log('RESEND_API_KEY not set - email reports disabled');
+}
 
 // Data Structures
 let connectedSockets = new Set(); // Track all connected sockets for accurate count
@@ -81,39 +65,41 @@ const broadcastOnlineCount = () => {
     });
 };
 
-// Send email report
+// Send email report using Resend API
 async function sendReportEmail(report, reporterName, reportedName) {
     console.log('Attempting to send report email...');
-    console.log('GMAIL_USER configured:', !!process.env.GMAIL_USER);
-    console.log('GMAIL_APP_PASSWORD configured:', !!process.env.GMAIL_APP_PASSWORD);
+    console.log('RESEND_API_KEY configured:', !!process.env.RESEND_API_KEY);
 
-    // Only send if email credentials are configured
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.log('Email not configured. Missing credentials. Report logged to console only.');
+    // Only send if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+        console.log('Email not configured. Missing RESEND_API_KEY. Report logged to console only.');
         return;
     }
 
-    const mailOptions = {
-        from: process.env.GMAIL_USER,
-        to: REPORT_EMAIL,
-        subject: `🚨 MatchChat Report: ${report.reason}`,
-        html: `
-            <h2>New User Report</h2>
-            <p><strong>Time:</strong> ${report.timestamp}</p>
-            <p><strong>Reporter:</strong> ${reporterName} (${report.reporterId})</p>
-            <p><strong>Reported User:</strong> ${reportedName} (${report.reportedId})</p>
-            <p><strong>Reason:</strong> ${report.reason}</p>
-            <p><strong>Details:</strong> ${report.details || 'No additional details provided'}</p>
-            <p><strong>Room ID:</strong> ${report.roomId}</p>
-            <hr>
-            <p style="color: gray; font-size: 12px;">This is an automated report from MatchChat.</p>
-        `
-    };
-
     try {
         console.log('Sending email to:', REPORT_EMAIL);
-        const result = await emailTransporter.sendMail(mailOptions);
-        console.log('Report email sent successfully! Message ID:', result.messageId);
+        const { data, error } = await resend.emails.send({
+            from: 'MatchChat Reports <onboarding@resend.dev>',
+            to: REPORT_EMAIL,
+            subject: `🚨 MatchChat Report: ${report.reason}`,
+            html: `
+                <h2>New User Report</h2>
+                <p><strong>Time:</strong> ${report.timestamp}</p>
+                <p><strong>Reporter:</strong> ${reporterName} (${report.reporterId})</p>
+                <p><strong>Reported User:</strong> ${reportedName} (${report.reportedId})</p>
+                <p><strong>Reason:</strong> ${report.reason}</p>
+                <p><strong>Details:</strong> ${report.details || 'No additional details provided'}</p>
+                <p><strong>Room ID:</strong> ${report.roomId}</p>
+                <hr>
+                <p style="color: gray; font-size: 12px;">This is an automated report from MatchChat.</p>
+            `
+        });
+
+        if (error) {
+            console.error('Resend API error:', error);
+        } else {
+            console.log('Report email sent successfully! Email ID:', data.id);
+        }
     } catch (error) {
         console.error('Failed to send report email. Full error:', error);
     }
