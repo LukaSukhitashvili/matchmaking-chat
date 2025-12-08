@@ -35,17 +35,17 @@ const REPORT_EMAIL = 'okaybrooiii@gmail.com';
 // For production, set GMAIL_USER and GMAIL_APP_PASSWORD in environment variables
 const emailTransporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // true for 465, false for other ports
+    port: 587,
+    secure: false, // upgrade later with STARTTLS
     auth: {
         user: process.env.GMAIL_USER || '',
         pass: process.env.GMAIL_APP_PASSWORD || ''
     },
     // Add timeouts to prevent hanging
     connectionTimeout: 10000,
-    socketTimeout: 10000
-    // debug: true, // Uncomment for debug output
-    // logger: true // Uncomment for debug output
+    socketTimeout: 10000,
+    debug: true, // Enable debug logs
+    logger: true // Enable logger
 });
 
 // Verify connection configuration
