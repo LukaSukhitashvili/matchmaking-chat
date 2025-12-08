@@ -75,6 +75,7 @@ function App() {
     setPartner(null);
     setRoomId(null);
     setView('setup');
+    setIsDisconnectModalOpen(false);
   };
 
   const handleReconnect = () => {
