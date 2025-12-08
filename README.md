@@ -1,102 +1,100 @@
 # 💬 MatchChat
 
-A real-time anonymous chat app where you can meet random people from around the world. Built with React and Socket.io.
+> A fun hobby project — real-time anonymous chat app where you can meet random people from around the world.
 
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
 ![Socket.io](https://img.shields.io/badge/Socket.io-010101?style=flat&logo=socket.io&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
 
+<p align="center">
+  <img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" alt="Chat Animation" width="400"/>
+</p>
+
 ---
 
 ## ✨ Features
 
-### 💬 Real-time Messaging
-Chat instantly with random strangers. Messages are delivered in real-time using WebSockets.
-
-### ⌨️ Typing Indicator
-See when your chat partner is typing a message.
-
-### 🖼️ Image Sharing
-Share images directly in the chat (up to 5MB).
-
-### ✓✓ Read Receipts
-Know when your messages have been seen by your partner.
-
-### 🌍 Country Flags
-Show where you're from with country flags displayed next to your name.
-
-### 🌙 Dark / Light Mode
-Switch between dark and light themes based on your preference.
-
-### 🚨 Report & Block
-Report inappropriate users and block them from matching with you again.
-
-### 🔊 Sound Notifications
-Get notified with sounds when you find a match or receive a message.
-
-### 👥 Online Counter
-See how many users are currently online.
+| Feature | Description |
+|---------|-------------|
+| 💬 **Real-time Messaging** | Chat instantly using WebSockets |
+| ⌨️ **Typing Indicator** | See when your partner is typing |
+| 🖼️ **Image Sharing** | Share images up to 5MB |
+| ✓✓ **Read Receipts** | Know when messages are seen |
+| 🌍 **Country Flags** | Display your country flag |
+| 🌙 **Dark / Light Mode** | Toggle your preferred theme |
+| 🚨 **Report & Block** | Keep the community safe |
+| 🔊 **Sound Notifications** | Audio alerts for matches and messages |
+| 👥 **Online Counter** | See active users count |
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend:**
-- React 19
-- Vite
-- TailwindCSS
-- Socket.io Client
+**Frontend:** React 19, Vite, TailwindCSS, Socket.io Client
 
-**Backend:**
-- Node.js
-- Express
-- Socket.io
-- Resend (for email notifications)
+**Backend:** Node.js, Express, Socket.io, Resend (emails)
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
+### Local Development
 
-### Installation
-
-1. Clone the repository
+1. **Clone the repo**
 ```bash
 git clone https://github.com/LukaSukhitashvili/matchmaking-chat.git
 cd matchmaking-chat
 ```
 
-2. Install server dependencies
+2. **Install dependencies**
 ```bash
-cd server
-npm install
+cd server && npm install
+cd ../client && npm install
 ```
 
-3. Install client dependencies
+3. **Run development servers**
 ```bash
-cd ../client
-npm install
+# Terminal 1 - Server
+cd server && npm run dev
+
+# Terminal 2 - Client
+cd client && npm run dev
 ```
 
-4. Create a `.env` file in the server folder (optional, for email reports)
-```env
-RESEND_API_KEY=your_resend_api_key
-```
+4. Open **http://localhost:5173**
 
-5. Run the development server
-```bash
-# In server folder
-npm run dev
+---
 
-# In client folder (new terminal)
-npm run dev
-```
+## 🌐 Deploy to Render (Free)
 
-6. Open http://localhost:5173 in your browser
+Want to host your own? Here's how:
+
+### Step 1: Fork this repo
+Click the **Fork** button at the top right of this page.
+
+### Step 2: Create a Render account
+Go to [render.com](https://render.com) and sign up (free).
+
+### Step 3: Create a new Web Service
+1. Click **New** → **Web Service**
+2. Connect your GitHub and select your forked repo
+3. Configure the service:
+
+| Setting | Value |
+|---------|-------|
+| **Name** | `matchchat` (or anything you like) |
+| **Root Directory** | `server` |
+| **Build Command** | `cd ../client && npm install && npm run build && cd ../server && npm install` |
+| **Start Command** | `npm start` |
+| **Instance Type** | Free |
+
+### Step 4: Add Environment Variables (optional)
+For email reports to work, add:
+- `RESEND_API_KEY` = your key from [resend.com](https://resend.com)
+
+### Step 5: Deploy!
+Click **Create Web Service** and wait a few minutes. Your app will be live! 🎉
 
 ---
 
@@ -104,38 +102,30 @@ npm run dev
 
 ```
 matchmaking-chat/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/     # UI components
-│   │   ├── context/        # Theme context
-│   │   └── utils/          # Sound manager
-│   └── ...
-├── server/                 # Express backend
-│   └── index.js            # Socket.io server
-└── README.md
+├── client/             # React frontend (Vite)
+│   └── src/
+│       ├── components/ # UI components
+│       ├── context/    # Theme provider
+│       └── utils/      # Sound manager
+└── server/             # Express + Socket.io backend
+    └── index.js
 ```
-
----
-
-## 🌐 Deployment
-
-The app is deployed on **Render**:
-- Frontend and backend are served from the same server
-- Uses Socket.io for real-time communication
-- Email reports powered by Resend API
 
 ---
 
 ## 📝 License
 
-This project is open source and available under the [MIT License](LICENSE).
+MIT License — feel free to use this for learning or your own projects!
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request.
+This is a hobby project, but contributions are welcome! Open an issue or PR if you have ideas.
 
 ---
 
-Made with ❤️ by [Luka Sukhitashvili](https://github.com/LukaSukhitashvili)
+<p align="center">
+  Made with ❤️ as a fun side project
+</p>
+
