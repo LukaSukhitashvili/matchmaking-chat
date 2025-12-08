@@ -4,22 +4,30 @@ import SetupForm from './components/SetupForm';
 import ChatRoom from './components/ChatRoom';
 import DisconnectModal from './components/DisconnectModal';
 import VersionChecker from './components/VersionChecker';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import soundManager from './utils/sounds';
 
 // Initialize socket outside component
 const SOCKET_URL = import.meta.env.MODE === 'production' ? '/' : 'http://localhost:3000';
 const socket = io(SOCKET_URL);
 
-function App() {
+function AppContent() {
+  const { isDark } = useTheme();
   const [view, setView] = useState('setup'); // setup, waiting, chat
   const [partner, setPartner] = useState(null);
   const [roomId, setRoomId] = useState(null);
   const [userData, setUserData] = useState(null);
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
   const [disconnectMessage, setDisconnectMessage] = useState('');
+  const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
     socket.on('connect', () => {
       console.log('Connected to server:', socket.id);
+    });
+
+    socket.on('online_count', (data) => {
+      setOnlineCount(data.count);
     });
 
     socket.on('room_created', (data) => {
@@ -27,6 +35,8 @@ function App() {
       setPartner(data.partner);
       setView('chat');
       setIsDisconnectModalOpen(false);
+      // Play match sound
+      soundManager.playMatch();
     });
 
     socket.on('partner_disconnected', () => {
@@ -34,18 +44,23 @@ function App() {
       setIsDisconnectModalOpen(true);
       setPartner(null);
       setRoomId(null);
-      // Stay in 'chat' view but show modal, or switch to waiting?
-      // Requirement: "Modal overlaid on screen". So we can stay in current view or switch to a neutral state.
-      // If we switch to 'setup', the modal might look weird over the form.
-      // Let's keep the view as is (or switch to waiting background) and show modal.
-      // Actually, if we are in chat, we should probably clear the chat UI or keep it visible behind modal?
-      // Let's keep it visible behind modal for context.
+    });
+
+    socket.on('report_submitted', (data) => {
+      console.log('Report submitted:', data.message);
+    });
+
+    socket.on('user_blocked', (data) => {
+      console.log('User blocked:', data.blockedId);
     });
 
     return () => {
       socket.off('connect');
+      socket.off('online_count');
       socket.off('room_created');
       socket.off('partner_disconnected');
+      socket.off('report_submitted');
+      socket.off('user_blocked');
     };
   }, []);
 
@@ -61,8 +76,6 @@ function App() {
       setPartner(null);
       setRoomId(null);
       setView('waiting');
-      // Re-join automatically or wait for user?
-      // Requirement: "Skip (find next)". So auto re-join.
       if (userData) {
         socket.emit('join', userData);
       }
@@ -90,18 +103,21 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white font-sans overflow-hidden">
+    <div className={`min-h-screen font-sans overflow-hidden transition-colors duration-300 ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+      }`}>
       <VersionChecker />
-      {view === 'setup' && <SetupForm onJoin={handleJoin} />}
+      {view === 'setup' && <SetupForm onJoin={handleJoin} onlineCount={onlineCount} />}
 
       {view === 'waiting' && (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mb-6"></div>
           <h2 className="text-2xl font-bold animate-pulse text-center">Searching for a partner...</h2>
-          <p className="text-gray-400 mt-2 text-center">This might take a moment.</p>
+          <p className={`mt-2 text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>This might take a moment.</p>
+          <p className={`mt-1 text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{onlineCount} users online</p>
           <button
             onClick={() => setView('setup')}
-            className="mt-8 px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            className={`mt-8 px-6 py-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
           >
             Cancel
           </button>
@@ -128,4 +144,13 @@ function App() {
   );
 }
 
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 export default App;
+
