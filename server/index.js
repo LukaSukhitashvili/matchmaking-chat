@@ -67,9 +67,13 @@ const broadcastOnlineCount = () => {
 
 // Send email report
 async function sendReportEmail(report, reporterName, reportedName) {
+    console.log('Attempting to send report email...');
+    console.log('GMAIL_USER configured:', !!process.env.GMAIL_USER);
+    console.log('GMAIL_APP_PASSWORD configured:', !!process.env.GMAIL_APP_PASSWORD);
+
     // Only send if email credentials are configured
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.log('Email not configured. Report logged to console:', report);
+        console.log('Email not configured. Missing credentials. Report logged to console only.');
         return;
     }
 
@@ -91,10 +95,11 @@ async function sendReportEmail(report, reporterName, reportedName) {
     };
 
     try {
-        await emailTransporter.sendMail(mailOptions);
-        console.log('Report email sent successfully');
+        console.log('Sending email to:', REPORT_EMAIL);
+        const result = await emailTransporter.sendMail(mailOptions);
+        console.log('Report email sent successfully! Message ID:', result.messageId);
     } catch (error) {
-        console.error('Failed to send report email:', error.message);
+        console.error('Failed to send report email. Full error:', error);
     }
 }
 
